@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モグラ叩きゲーム - 難易度 & ランキング付き</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .mole-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
+            background-color: #a7f3d0;
+            box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .mole {
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateY(100%);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .mole.up {
+            transform: translateY(0%);
+        }
+        .mole:active {
+            transform: translateY(10%) scale(0.9);
+        }
+        @keyframes hitEffect {
+            0% { transform: scale(1) translateY(0); filter: brightness(1); }
+            50% { transform: scale(0.8) translateY(20%) rotate(10deg); filter: brightness(1.5); }
+            100% { transform: scale(1) translateY(0); filter: brightness(1); }
+        }
+        .mole.hit {
+            animation: hitEffect 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-teal-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 md:p-8 flex flex-col items-center border border-teal-100">
+        
+        <!-- Header / Title -->
+        <h1 class="text-3xl font-extrabold text-teal-800 mb-1 tracking-tight text-center">🔨 モグラ叩き！</h1>
+        <p class="text-xs md:text-sm text-gray-500 mb-5 text-center">難易度を選んでランキング上位を目指そう！</p>
+
+        <!-- Difficulty Selector -->
+        <div id="difficultySelector" class="w-full mb-5">
+            <div class="text-xs font-semibold text-teal-700 uppercase mb-2 text-center">難易度を選んでね</div>
+            <div class="grid grid-cols-3 gap-2">
+                <button data-diff="easy" class="diff-btn py-2.5 px-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs md:text-sm rounded-xl transition border-2 border-emerald-400 cursor-pointer shadow-xs">
+                    🌱 かんたん
+                </button>
+                <button data-diff="normal" class="diff-btn py-2.5 px-2 bg-teal-600 text-white font-bold text-xs md:text-sm rounded-xl transition border-2 border-teal-700 cursor-pointer shadow-md">
+                    ⭐ ふつう
+                </button>
+                <button data-diff="hard" class="diff-btn py-2.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-xs md:text-sm rounded-xl transition border-2 border-amber-300 cursor-pointer shadow-xs">
+                    🔥 むずかしい
+                </button>
+            </div>
+        </div>
+
+        <!-- Score & Timer Display (Hidden until game starts) -->
+        <div id="gameStats" class="grid grid-cols-2 gap-4 w-full mb-5 hidden">
+            <div class="bg-teal-50 border border-teal-200 rounded-2xl p-3 text-center shadow-sm">
+                <div class="text-xs font-semibold text-teal-600 uppercase">スコア</div>
+                <div id="score" class="text-3xl font-extrabold text-teal-900 mt-1">0</div>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center shadow-sm">
+                <div class="text-xs font-semibold text-amber-600 uppercase">残り時間</div>
+                <div id="timer" class="text-3xl font-extrabold text-amber-900 mt-1">30秒</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 md:gap-4 w-full aspect-square mb-5">
+            <!-- Holes 0 to 8 -->
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="0">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="1">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="2">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="3">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="4">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="5">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="6">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="7">🐹</div></div>
+            <div class="mole-container flex items-end justify-center"><div class="absolute bottom-1 w-3/4 h-6 bg-teal-800/20 rounded-full"></div><div class="mole w-4/5 h-4/5 flex items-center justify-center text-5xl md:text-6xl select-none z-10" data-id="8">🐹</div></div>
+        </div>
+
+        <!-- Control Button -->
+        <button id="startBtn" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-lg rounded-2xl shadow-lg transition transform hover:-translate-y-0.5 cursor-pointer">
+            ゲームスタート！
+        </button>
+
+        <div class="w-full mt-6 pt-5 border-t border-gray-100">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold text-teal-800 flex items-center gap-1.5">🏆 ハイスコアランキング</h3>
+                <div class="flex gap-1">
+                    <button data-rank-diff="easy" class="rank-tab px-2 py-0.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 transition">かんたん</button>
+                    <button data-rank-diff="normal" class="rank-tab px-2 py-0.5 text-xs font-semibold rounded-lg bg-teal-600 text-white transition">ふつう</button>
+                    <button data-rank-diff="hard" class="rank-tab px-2 py-0.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 transition">むずかしい</button>
+                </div>
+            </div>
+            <div id="rankingList" class="space-y-1.5 text-xs">
+                <!-- Dynamically populated ranking items -->
+            </div>
+        </div>
+
+    </div>
+
+    <div id="gameOverModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl">
+            <div class="text-4xl mb-2">🎉</div>
+            <h2 class="text-2xl font-extrabold text-gray-800 mb-1">タイムアップ！</h2>
+            <p class="text-gray-500 text-xs mb-3">今回のスコア</p>
+            <div class="bg-teal-50 border border-teal-200 rounded-2xl py-3 mb-4">
+                <div id="finalScore" class="text-3xl font-extrabold text-teal-700">0</div>
+                <div class="text-xs font-semibold text-teal-600 uppercase mt-0.5">ポイント (<span id="modalDiffName">ふつう</span>)</div>
+            </div>
+
+            <!-- Name Input Form for Ranking -->
+            <div id="rankingInputArea" class="mb-5 text-left">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">ランキングに名前を登録する</label>
+                <input type="text" id="playerNameInput" placeholder="プレイヤー名 (例: 太郎)" maxlength="10" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 mb-2">
+                <button id="saveScoreBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition cursor-pointer shadow-sm">
+                    スコアを保存する
+                </button>
+            </div>
+
+            <button id="retryBtn" class="w-full py-3 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold rounded-2xl shadow-md transition cursor-pointer">
+                もう一度遊ぶ
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const moles = document.querySelectorAll('.mole');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const gameStats = document.getElementById('gameStats');
+        const difficultySelector = document.getElementById('difficultySelector');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const modalDiffName = document.getElementById('modalDiffName');
+        const retryBtn = document.getElementById('retryBtn');
+        const diffBtns = document.querySelectorAll('.diff-btn');
+        const rankTabs = document.querySelectorAll('.rank-tab');
+        const rankingList = document.getElementById('rankingList');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const saveScoreBtn = document.getElementById('saveScoreBtn');
+        const rankingInputArea = document.getElementById('rankingInputArea');
+
+        // Difficulty Settings
+        const difficulties = {
+            easy: { name: 'かんたん', time: 30, minPop: 800, maxPop: 1400, scoreVal: 5 },
+            normal: { name: 'ふつう', time: 30, minPop: 500, maxPop: 1000, scoreVal: 10 },
+            hard: { name: 'むずかしい', time: 30, minPop: 300, maxPop: 700, scoreVal: 20 }
+        };
+
+        let currentDiff = 'normal';
+        let activeDiffSetting = difficulties.normal;
+        let score = 0;
+        let timeLeft = 30;
+        let gameTimer = null;
+        let moleTimer = null;
+        let isPlaying = false;
+        let lastHole = null;
+        let currentRankViewDiff = 'normal';
+
+        // Difficulty Selector Event
+        diffBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isPlaying) return;
+                diffBtns.forEach(b => {
+                    b.className = "diff-btn py-2.5 px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs md:text-sm rounded-xl transition border-2 border-gray-200 cursor-pointer shadow-xs";
+                });
+                const diffKey = btn.dataset.diff;
+                currentDiff = diffKey;
+                activeDiffSetting = difficulties[diffKey];
+
+                if (diffKey === 'easy') {
+                    btn.className = "diff-btn py-2.5 px-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs md:text-sm rounded-xl transition border-2 border-emerald-400 cursor-pointer shadow-xs";
+                } else if (diffKey === 'normal') {
+                    btn.className = "diff-btn py-2.5 px-2 bg-teal-600 text-white font-bold text-xs md:text-sm rounded-xl transition border-2 border-teal-700 cursor-pointer shadow-md";
+                } else {
+                    btn.className = "diff-btn py-2.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-xs md:text-sm rounded-xl transition border-2 border-amber-300 cursor-pointer shadow-xs";
+                }
+                currentRankViewDiff = diffKey;
+                updateRankTabsUI();
+                renderRankings(diffKey);
+            });
+        });
+
+        // Ranking Tab Switcher
+        rankTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const diff = tab.dataset.rankDiff;
+                currentRankViewDiff = diff;
+                updateRankTabsUI();
+                renderRankings(diff);
+            });
+        });
+
+        function updateRankTabsUI() {
+            rankTabs.forEach(t => {
+                if (t.dataset.rankDiff === currentRankViewDiff) {
+                    t.className = "rank-tab px-2 py-0.5 text-xs font-semibold rounded-lg bg-teal-600 text-white transition";
+                } else {
+                    t.className = "rank-tab px-2 py-0.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 transition";
+                }
+            });
+        }
+
+        // LocalStorage Ranking Functions
+        function getRankings(diff) {
+            const data = localStorage.getItem('mole_game_ranking_' + diff);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveRanking(diff, name, score) {
+            let rankings = getRankings(diff);
+            rankings.push({ name: name.trim() || '名無しさん', score: score, date: new Date().toLocaleDateString() });
+            rankings.sort((a, b) => b.score - a.score);
+            rankings = rankings.slice(0, 5); // Keep top 5
+            localStorage.setItem('mole_game_ranking_' + diff, JSON.stringify(rankings));
+        }
+
+        function renderRankings(diff) {
+            const rankings = getRankings(diff);
+            if (rankings.length === 0) {
+                rankingList.innerHTML = `<div class="text-center text-gray-400 py-2">まだランキングがありません</div>`;
+                return;
+            }
+            let html = '';
+            rankings.forEach((item, index) => {
+                let badgeColor = 'bg-gray-100 text-gray-600';
+                if (index === 0) badgeColor = 'bg-amber-100 text-amber-800 font-bold';
+                else if (index === 1) badgeColor = 'bg-slate-100 text-slate-700 font-bold';
+                else if (index === 2) badgeColor = 'bg-orange-100 text-orange-800 font-bold';
+
+                html += `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-xl border border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center rounded-full text-xs ${badgeColor}">${index + 1}</span>
+                            <span class="font-semibold text-gray-700 truncate max-w-[120px]">${escapeHtml(item.name)}</span>
+                        </div>
+                        <span class="font-extrabold text-teal-700">${item.score} pt</span>
+                    </div>
+                `;
+            });
+            rankingList.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // Random hole generator
+        function randomHole(molesList) {
+            const idx = Math.floor(Math.random() * molesList.length);
+            const hole = molesList[idx];
+            if (hole === lastHole) {
+                return randomHole(molesList);
+            }
+            lastHole = hole;
+            return hole;
+        }
+
+        function randomTime(min, max) {
+            return Math.round(Math.random() * (max - min) + min);
+        }
+
+        function showMole() {
+            if (!isPlaying) return;
+            const time = randomTime(activeDiffSetting.minPop - 200, activeDiffSetting.maxPop - 300);
+            const hole = randomHole(moles);
+            
+            hole.classList.add('up');
+
+            setTimeout(() => {
+                if (!hole.dataset.clicked) {
+                    hole.classList.remove('up');
+                }
+                hole.dataset.clicked = "";
+                if (isPlaying) {
+                    moleTimer = setTimeout(showMole, randomTime(150, 400));
+                }
+            }, time);
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = activeDiffSetting.time;
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = timeLeft + '秒';
+            
+            difficultySelector.classList.add('hidden');
+            gameStats.classList.remove('hidden');
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            startBtn.disabled = true;
+            gameOverModal.classList.add('hidden');
+            rankingInputArea.classList.remove('hidden');
+            playerNameInput.value = '';
+            isPlaying = true;
+
+            moles.forEach(m => {
+                m.classList.remove('up', 'hit');
+                m.dataset.clicked = "";
+            });
+
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft + '秒';
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            showMole();
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(gameTimer);
+            clearTimeout(moleTimer);
+            
+            moles.forEach(m => m.classList.remove('up'));
+
+            finalScoreDisplay.textContent = score;
+            modalDiffName.textContent = activeDiffSetting.name;
+            gameOverModal.classList.remove('hidden');
+
+            difficultySelector.classList.remove('hidden');
+            gameStats.classList.add('hidden');
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            startBtn.disabled = false;
+            
+            currentRankViewDiff = currentDiff;
+            updateRankTabsUI();
+            renderRankings(currentDiff);
+        }
+
+        // Whack event handling
+        moles.forEach(mole => {
+            mole.addEventListener('click', () => {
+                if (!isPlaying) return;
+                if (!mole.classList.contains('up')) return;
+                if (mole.dataset.clicked === "true") return;
+
+                mole.dataset.clicked = "true";
+                score += activeDiffSetting.scoreVal;
+                scoreDisplay.textContent = score;
+
+                mole.classList.add('hit');
+                setTimeout(() => {
+                    mole.classList.remove('up', 'hit');
+                }, 150);
+            });
+        });
+
+        // Save Score Button
+        saveScoreBtn.addEventListener('click', () => {
+            const name = playerNameInput.value.trim() || '名無しさん';
+            saveRanking(currentDiff, name, score);
+            rankingInputArea.classList.add('hidden');
+            renderRankings(currentDiff);
+        });
+
+        startBtn.addEventListener('click', startGame);
+        retryBtn.addEventListener('click', () => {
+            gameOverModal.classList.add('hidden');
+            startGame();
+        });
+
+        // Initial render for default difficulty ranking
+        renderRankings('normal');
+    </script>
+</body>
+</html>
